@@ -29,7 +29,11 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Called when the VCharacter moves forward
 	void MoveForward(float Value);
+
+	// Called when the VCharacter moves right
+	void MoveRight(float Value);
 
 public:	
 	// Called every frame
