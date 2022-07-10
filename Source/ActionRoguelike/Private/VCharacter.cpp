@@ -48,9 +48,10 @@ void AVCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("MoveForward", this, &AVCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AVCharacter::MoveRight);
 
-
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+
+	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &AVCharacter::PrimaryAttack);
 }
 
 // Called when the VCharacter moves forward
@@ -78,6 +79,20 @@ void AVCharacter::MoveRight(float Value)
 	FVector RihtVector = FRotationMatrix(ControlRot).GetScaledAxis(EAxis::Y);
 
 	AddMovementInput(RihtVector, Value);
+
+}
+
+void AVCharacter::PrimaryAttack()
+{
+	// For set location
+	// FVector Location = GetMesh()->GetSocketLocation("SocketName");
+
+	FTransform SpawnTM = FTransform(GetControlRotation(), GetActorLocation());
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
 
 }
 
