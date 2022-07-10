@@ -52,6 +52,7 @@ void AVCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
 
 	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &AVCharacter::PrimaryAttack);
+	PlayerInputComponent->BindAction("JumpAction", IE_Pressed, this, &AVCharacter::Jump);
 }
 
 // Called when the VCharacter moves forward
@@ -82,6 +83,7 @@ void AVCharacter::MoveRight(float Value)
 
 }
 
+// Called when the VCharacter attacks
 void AVCharacter::PrimaryAttack()
 {
 	// For set location

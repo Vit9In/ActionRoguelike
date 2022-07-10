@@ -38,6 +38,7 @@ protected:
 	// Called when the VCharacter moves right
 	void MoveRight(float Value);
 
+	// Called when the VCharacter attacks
 	void PrimaryAttack();
 
 public:	
