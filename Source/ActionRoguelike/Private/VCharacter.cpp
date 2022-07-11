@@ -5,6 +5,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
+#include "VInteractionComponent.h"
 
 
 // Sets default values
@@ -24,6 +25,12 @@ AVCharacter::AVCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
 	bUseControllerRotationYaw = false;
+
+	GetCharacterMovement()->JumpZVelocity = 600.0f;
+	GetCharacterMovement()->AirControl = 1.0f;
+	JumpMaxCount = 2;
+
+	InteractionComp = CreateDefaultSubobject<UVInteractionComponent>("InteractionComp");
 }
 
 // Called when the game starts or when spawned
@@ -51,7 +58,9 @@ void AVCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
 
-	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &AVCharacter::PrimaryAttack);
+	PlayerInputComponent->BindAction("PrimaryAttack", IE_Pressed, this, &AVCharacter::PrimaryAttack);	
+	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &AVCharacter::PrimaryInteract);
+
 	PlayerInputComponent->BindAction("JumpAction", IE_Pressed, this, &AVCharacter::Jump);
 }
 
@@ -85,6 +94,16 @@ void AVCharacter::MoveRight(float Value)
 
 // Called when the VCharacter attacks
 void AVCharacter::PrimaryAttack()
+{	
+	PlayAnimMontage(AttackAnim);
+
+	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &AVCharacter::PrimaryAttack_TimeElapsed, 0.2f);
+
+	//GetWorldTimerManager().ClearTimer(TimerHandle_PrimaryAttack);	
+
+}
+
+void AVCharacter::PrimaryAttack_TimeElapsed()
 {
 	// For set location
 	// FVector Location = GetMesh()->GetSocketLocation("SocketName");
@@ -95,6 +114,13 @@ void AVCharacter::PrimaryAttack()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+}
 
+void AVCharacter::PrimaryInteract()
+{
+	if (InteractionComp) 
+	{
+		InteractionComp->PrimaryInteract();
+	}
 }
 
