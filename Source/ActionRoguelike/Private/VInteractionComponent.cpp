@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "VGameplayInterface.h"
+
 #include "VInteractionComponent.h"
+#include "VGameplayInterface.h"
 #include <DrawDebugHelpers.h>
 
 // Sets default values for this component's properties

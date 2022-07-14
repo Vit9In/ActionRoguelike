@@ -10,6 +10,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class UVInteractionComponent;
 class UAnimMontage;
+class UVAttributeComponent;
 
 UCLASS()
 class ACTIONROGUELIKE_API AVCharacter : public ACharacter
@@ -21,7 +22,6 @@ public:
 	AVCharacter();
 
 protected:
-
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
 
@@ -31,14 +31,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	FTimerHandle TimerHandle_PrimaryAttack;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USpringArmComponent* SpringArmComp;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UCameraComponent* CameraComp;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UVInteractionComponent* InteractionComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UVAttributeComponent* AttributeCopm;
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -5,6 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "VAttributeComponent.h"
 
 
 // Sets default values
@@ -15,6 +16,7 @@ AVMagicProjectile::AVMagicProjectile()
 
 	SphereComp = CreateDefaultSubobject<USphereComponent>("SphereComp");
 	SphereComp->SetCollisionProfileName("Projectile");
+	SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AVMagicProjectile::OnActorOverlap);
 	RootComponent = SphereComp;
 
 	EffectComp = CreateDefaultSubobject<UParticleSystemComponent>("EffectComp");
@@ -25,6 +27,21 @@ AVMagicProjectile::AVMagicProjectile()
 	MovementComp->bRotationFollowsVelocity = true;
 	MovementComp->bInitialVelocityInLocalSpace = true;
 
+}
+
+void AVMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor && OtherActor != GetInstigator())
+	{
+		UVAttributeComponent* AttributeCopm = Cast<UVAttributeComponent>(OtherActor->GetComponentByClass(UVAttributeComponent::StaticClass()));
+
+		if (AttributeCopm)
+		{
+			AttributeCopm->ApplyHealthChange(-20.0f);
+
+			Destroy();
+		}
+	}
 }
 
 // Called when the game starts or when spawned

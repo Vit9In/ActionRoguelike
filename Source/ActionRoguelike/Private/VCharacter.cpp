@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "VInteractionComponent.h"
+#include "VAttributeComponent.h"
 
 
 // Sets default values
@@ -31,6 +32,7 @@ AVCharacter::AVCharacter()
 	JumpMaxCount = 2;
 
 	InteractionComp = CreateDefaultSubobject<UVInteractionComponent>("InteractionComp");
+	AttributeCopm = CreateDefaultSubobject<UVAttributeComponent>("AttributeComp");
 }
 
 // Called when the game starts or when spawned
@@ -108,12 +110,17 @@ void AVCharacter::PrimaryAttack_TimeElapsed()
 	// For set location
 	// FVector Location = GetMesh()->GetSocketLocation("SocketName");
 
-	FTransform SpawnTM = FTransform(GetControlRotation(), GetActorLocation());
+	if (ensureAlways(ProjectileClass))
+	{
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FTransform SpawnTM = FTransform(GetControlRotation(), GetActorLocation());
 
-	GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Instigator = this;
+
+		GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
+	}
 }
 
 void AVCharacter::PrimaryInteract()
