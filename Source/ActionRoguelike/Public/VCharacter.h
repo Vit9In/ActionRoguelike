@@ -22,14 +22,42 @@ public:
 	AVCharacter();
 
 protected:
+
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
-	TSubclassOf<AActor> ProjectileClass;
+	TSubclassOf<AActor> AttackProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	FTimerHandle TimerHandle_PrimaryAttack;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	float AttackAnimDelay;
+
+	UPROPERTY(EditAnywhere, Category = "Dash")
+	UAnimMontage* DashProjectileAnim;
+
+	UPROPERTY(EditAnywhere, Category = "Dash")
+	float DashAnimDelay;
+
+	UPROPERTY(EditAnywhere, Category = "Dash")
+	TSubclassOf<AActor> DashProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Dash")
+	FTimerHandle TimerHandle_Dash;
+
+	UPROPERTY(EditAnywhere, Category = "BlackholeAttack")
+	UAnimMontage* BlackholeAttackProjectileAnim;
+
+	UPROPERTY(EditAnywhere, Category = "BlackholeAttack")
+	float BlackholeAttackAnimDelay;
+
+	UPROPERTY(EditAnywhere, Category = "BlackholeAttack")
+	TSubclassOf<AActor> BlackholeAttackProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "BlackholeAttack")
+	FTimerHandle TimerHandle_BlackholeAttack;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USpringArmComponent* SpringArmComp;
@@ -50,14 +78,23 @@ protected:
 	void MoveForward(float Value);
 
 	// Called when the VCharacter moves right
-	void MoveRight(float Value);
-
-	// Called when the VCharacter attacks
-	void PrimaryAttack();
-
-	void PrimaryAttack_TimeElapsed();
+	void MoveRight(float Value);	
 
 	void PrimaryInteract();
+
+	void SpawnProjectile(TSubclassOf<AActor> ClassToSpawn);
+
+	// Called when attacks
+	void PrimaryAttack();
+	void PrimaryAttack_TimeElapsed();
+
+	// Called when dashes
+	void Dash();
+	void Dash_TimeElapsed();
+
+	// Called when attacks with blackhole
+	void BlackholeAttack();
+	void BlackholeAttack_TimeElapsed();
 
 
 public:	
