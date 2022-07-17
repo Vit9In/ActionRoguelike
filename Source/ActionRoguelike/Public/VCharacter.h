@@ -96,6 +96,11 @@ protected:
 	void BlackholeAttack();
 	void BlackholeAttack_TimeElapsed();
 
+	UFUNCTION()
+	void OnHealthChanged(AActor* InstigatorActor, UVAttributeComponent* OwningComp, float NewHealth, float Delta);
+
+	virtual void PostInitializeComponents() override;
+
 
 public:	
 	// Called every frame

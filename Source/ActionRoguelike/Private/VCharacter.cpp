@@ -38,6 +38,13 @@ AVCharacter::AVCharacter()
 	BlackholeAttackAnimDelay = 0.2f;
 }
 
+void AVCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	AttributeCopm->OnHealthChanged.AddDynamic(this, &AVCharacter::OnHealthChanged);
+}
+
 // Called when the game starts or when spawned
 void AVCharacter::BeginPlay()
 {
@@ -147,6 +154,15 @@ void AVCharacter::BlackholeAttack()
 void AVCharacter::BlackholeAttack_TimeElapsed()
 {
 	SpawnProjectile(BlackholeAttackProjectileClass);
+}
+
+void AVCharacter::OnHealthChanged(AActor* InstigatorActor, UVAttributeComponent* OwningComp, float NewHealth, float Delta)
+{
+	if (NewHealth <= 0.0f && Delta < 0.0f)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		DisableInput(PC);
+	}
 }
 
 void AVCharacter::PrimaryInteract()

@@ -10,6 +10,11 @@ UVAttributeComponent::UVAttributeComponent()
 
 }
 
+bool UVAttributeComponent::IsAlive() const
+{
+	return Health > 0.0f;
+}
+
 bool UVAttributeComponent::ApplyHealthChange(float Delta)
 {
 	Health += Delta;
