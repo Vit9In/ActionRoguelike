@@ -24,17 +24,4 @@ void AVItemChest::Interact_Implementation(APawn* InstigatorPawn)
 
 }
 
-// Called when the game starts or when spawned
-void AVItemChest::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void AVItemChest::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
 

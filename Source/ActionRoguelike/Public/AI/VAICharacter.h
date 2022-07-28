@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "VAICharacter.generated.h"
 
+class UPawnSensingComponent;
+class UVAttributeComponent;
+
 UCLASS()
 class ACTIONROGUELIKE_API AVAICharacter : public ACharacter
 {
@@ -16,10 +19,26 @@ public:
 	AVAICharacter();
 
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+
+	UPROPERTY(VisibleAnywhere, Category = "Effects")
+	FName TimeToHitParamName;
+
+	void SetTargetActor(AActor* NewTarget);
+
+	virtual void PostInitializeComponents() override;
+
+	UPROPERTY(VisibleAnywhere, Category = "Component")
+	UPawnSensingComponent* PawnSensigComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UVAttributeComponent* AttributeCopm;
+
+	UFUNCTION()
+	void OnPawnSeen(APawn* Pawn);
+
+	UFUNCTION()
+	void OnHealthChanged(AActor* InstigatorActor, UVAttributeComponent* OwningComp, float NewHealth, float Delta);
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+
 };

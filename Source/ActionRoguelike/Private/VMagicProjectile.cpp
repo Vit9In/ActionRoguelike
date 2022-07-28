@@ -37,7 +37,7 @@ void AVMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent,
 
 		if (AttributeCopm)
 		{
-			AttributeCopm->ApplyHealthChange(-20.0f);
+			AttributeCopm->ApplyHealthChange(GetInstigator(), -20.0f);
 
 			Destroy();
 		}
