@@ -7,6 +7,9 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "VAttributeComponent.h"
 #include "BrainComponent.h"
+#include "VWorldUserWidget.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 AVAICharacter::AVAICharacter()
@@ -16,6 +19,10 @@ AVAICharacter::AVAICharacter()
 	AttributeCopm = CreateDefaultSubobject<UVAttributeComponent>("AttributeComp");
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// For Bones
+	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+	//GetMesh()->SetGenerateOverlapEvents(true);
 
 	TimeToHitParamName = "TimeToHit";
 
@@ -53,9 +60,20 @@ void AVAICharacter::OnHealthChanged(AActor* InstigatorActor, UVAttributeComponen
 			SetTargetActor(InstigatorActor);
 		}
 
+		if (ActiveHealthBar == nullptr)
+		{
+			ActiveHealthBar = CreateWidget<UVWorldUserWidget>(GetWorld(), HealthBarWidgetClass);
+			if (ActiveHealthBar)
+			{
+				ActiveHealthBar->AttachedActor = this;
+				ActiveHealthBar->AddToViewport();
+			}
+		}
+
 		GetMesh()->SetScalarParameterValueOnMaterials(TimeToHitParamName, GetWorld()->TimeSeconds);
 		UE_LOG(LogTemp, Warning, TEXT("Hit"));
 
+		//Died
 		if (NewHealth <= 0.0f)
 		{
 			// stop BT
@@ -68,6 +86,9 @@ void AVAICharacter::OnHealthChanged(AActor* InstigatorActor, UVAttributeComponen
 			// regdol
 			GetMesh()->SetAllBodiesSimulatePhysics(true);
 			GetMesh()->SetCollisionProfileName("Ragdoll");
+
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			GetCharacterMovement()->DisableMovement();
 
 			// set lifespan
 			SetLifeSpan(10.0f);

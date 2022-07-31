@@ -6,6 +6,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "VAttributeComponent.h"
+#include "VGameplayFunctionLibrary.h"
 
 
 // Sets default values
@@ -27,6 +28,8 @@ AVMagicProjectile::AVMagicProjectile()
 	MovementComp->bRotationFollowsVelocity = true;
 	MovementComp->bInitialVelocityInLocalSpace = true;
 
+	DamageAmount = -20.f;
+
 }
 
 void AVMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -34,13 +37,18 @@ void AVMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent,
 	if (OtherActor && OtherActor != GetInstigator())
 	{
 		UVAttributeComponent* AttributeCopm = Cast<UVAttributeComponent>(OtherActor->GetComponentByClass(UVAttributeComponent::StaticClass()));
-
+		
 		if (AttributeCopm)
 		{
 			AttributeCopm->ApplyHealthChange(GetInstigator(), -20.0f);
 
 			Destroy();
 		}
+
+		/*if (UVGameplayFunctionLibrary::ApplyDirectionalDamage(GetInstigator(), OtherActor, DamageAmount, SweepResult))
+		{
+			Destroy();   // For bones
+		}*/
 	}
 }
 

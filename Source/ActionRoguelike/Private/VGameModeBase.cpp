@@ -9,6 +9,9 @@
 #include "VAttributeComponent.h"
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
+#include <VCharacter.h>
+
+static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), true, TEXT("Enable spawning of bots via timer"), ECVF_Cheat);
 
 AVGameModeBase::AVGameModeBase()
 {
@@ -24,8 +27,28 @@ void AVGameModeBase::StartPlay()
 	GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &AVGameModeBase::SpawnBotTimerElapsed, SpawnTimerInterval, true);
 }
 
+void AVGameModeBase::KillALl()
+{
+	for (TActorIterator<AVAICharacter> It(GetWorld()); It; ++It)
+	{
+		AVAICharacter* Bot = *It;
+
+		UVAttributeComponent* AttributeComp = UVAttributeComponent::GetAttribues(Bot);
+		if (ensure(AttributeComp) && AttributeComp->IsAlive())
+		{
+			AttributeComp->Kill(this); // pass in player? for kill credit
+		}
+	}
+}
+
 void AVGameModeBase::SpawnBotTimerElapsed()
 {
+	if (!CVarSpawnBots.GetValueOnGameThread())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Bot spawning disabled via cvar 'CvarSpawnBots'."));
+		return;
+	}
+
 	int32 NumOfAliveBots = 0;
 	for (TActorIterator<AVAICharacter> It(GetWorld()); It; ++It)
 	{
@@ -79,3 +102,29 @@ void AVGameModeBase::OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryIn
 		DrawDebugSphere(GetWorld(), Locations[0], 50.0f, 20, FColor::Blue, false, 60.0f);
 	}
 }
+
+void AVGameModeBase::RespawnPlayerElapsed(AController* Controller)
+{
+	if (ensure(Controller))
+	{
+		Controller->UnPossess();
+
+		RestartPlayer(Controller);
+	}
+}
+
+void AVGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
+{
+	AVCharacter* Player = Cast<AVCharacter>(VictimActor);
+	if (Player)
+	{
+		FTimerHandle TimerHandle_RespawnDelay;
+
+		FTimerDelegate Delegate;
+		Delegate.BindUFunction(this, "RespawnPlayerElapsed", Player->GetController());
+
+		float RespawnDelay = 2.0f;
+		GetWorldTimerManager().SetTimer(TimerHandle_RespawnDelay, Delegate, RespawnDelay, false);
+	}
+}
+

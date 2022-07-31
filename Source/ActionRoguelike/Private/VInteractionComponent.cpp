@@ -5,6 +5,8 @@
 #include "VGameplayInterface.h"
 #include <DrawDebugHelpers.h>
 
+static TAutoConsoleVariable<bool> CVarDebugDrawInteraction(TEXT("su.InteractionDebugDraw"), true, TEXT("Enable Debug Lines for Interact Component."), ECVF_Cheat);
+
 // Sets default values for this component's properties
 UVInteractionComponent::UVInteractionComponent()
 {
@@ -36,6 +38,8 @@ void UVInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UVInteractionComponent::PrimaryInteract()
 {
+	bool bDebugDraw = CVarDebugDrawInteraction.GetValueOnGameThread();
+
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 
@@ -60,6 +64,11 @@ void UVInteractionComponent::PrimaryInteract()
 
 	for (FHitResult Hit : Hits)
 	{
+		if (bDebugDraw)
+		{
+			DrawDebugSphere(GetWorld(), Hit.ImpactPoint, Radius, 32, LineColor, false, 2.0f);
+		}
+
 		AActor* HitActor = Hit.GetActor();
 		if (HitActor)
 		{
@@ -69,11 +78,12 @@ void UVInteractionComponent::PrimaryInteract()
 				IVGameplayInterface::Execute_Interact(HitActor, MyPawn);
 				break;
 			}
-		}
-
-		DrawDebugSphere(GetWorld(), Hit.ImpactPoint, Radius, 32, LineColor, false, 2.0f);
+		}		
 	}
 	
-	DrawDebugLine(GetWorld(), EyeLocation, End, LineColor, false, 2.0f, 0, 2.0f);
+	if (bDebugDraw)
+	{
+		DrawDebugLine(GetWorld(), EyeLocation, End, LineColor, false, 2.0f, 0, 2.0f);
+	}
 }
 

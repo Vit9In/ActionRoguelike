@@ -7,6 +7,7 @@
 #include "Camera/CameraComponent.h"
 #include "VInteractionComponent.h"
 #include "VAttributeComponent.h"
+#include "VActionComponent.h"
 
 // Sets default values
 AVCharacter::AVCharacter()
@@ -32,10 +33,7 @@ AVCharacter::AVCharacter()
 
 	InteractionComp = CreateDefaultSubobject<UVInteractionComponent>("InteractionComp");
 	AttributeCopm = CreateDefaultSubobject<UVAttributeComponent>("AttributeComp");
-
-	DashAnimDelay = 0.2f;
-	AttackAnimDelay = 0.2f;
-	BlackholeAttackAnimDelay = 0.2f;
+	ActionCopm = CreateDefaultSubobject<UVActionComponent>("ActionComp");
 }
 
 void AVCharacter::PostInitializeComponents()
@@ -43,6 +41,11 @@ void AVCharacter::PostInitializeComponents()
 	Super::PostInitializeComponents();
 
 	AttributeCopm->OnHealthChanged.AddDynamic(this, &AVCharacter::OnHealthChanged);
+}
+
+FVector AVCharacter::GetPawnViewLocation() const
+{
+	return CameraComp->GetComponentLocation();
 }
 
 // Called when the game starts or when spawned
@@ -76,7 +79,15 @@ void AVCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &AVCharacter::Dash);
 	PlayerInputComponent->BindAction("BlackholeAttack", IE_Pressed, this, &AVCharacter::BlackholeAttack);
 
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AVCharacter::SprintStart);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AVCharacter::SprintStop);
+
 	PlayerInputComponent->BindAction("PrimaryInteract", IE_Pressed, this, &AVCharacter::PrimaryInteract);
+}
+
+void AVCharacter::HealSelf(float Amount /* = 100 */)
+{
+	AttributeCopm->ApplyHealthChange(this, Amount);
 }
 
 // Called when the VCharacter moves forward
@@ -107,54 +118,31 @@ void AVCharacter::MoveRight(float Value)
 
 }
 
-// Called when the VCharacter attacks
-void AVCharacter::PrimaryAttack()
-{	
-	PlayAnimMontage(AttackAnim);
-
-	GetWorldTimerManager().SetTimer(TimerHandle_PrimaryAttack, this, &AVCharacter::PrimaryAttack_TimeElapsed, AttackAnimDelay);
+void AVCharacter::SprintStart()
+{
+	ActionCopm->StartActionByName(this, "Sprint");
 }
 
-void AVCharacter::PrimaryAttack_TimeElapsed()
+void AVCharacter::SprintStop()
 {
-	SpawnProjectile(AttackProjectileClass);	
+	ActionCopm->StopActionByName(this, "Sprint");
+}
 
-	/*if (ensureAlways(ProjectileClass))
-	{
-
-		FTransform SpawnTM = FTransform(GetControlRotation(), GetActorLocation());
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		SpawnParams.Instigator = this;
-
-		GetWorld()->SpawnActor<AActor>(ProjectileClass, SpawnTM, SpawnParams);
-	}*/
+void AVCharacter::PrimaryAttack()
+{	
+	ActionCopm->StartActionByName(this, "PrimaryAttack");
 }
 
 void AVCharacter::Dash()
 {
-	PlayAnimMontage(DashProjectileAnim);
-
-	GetWorldTimerManager().SetTimer(TimerHandle_Dash, this, &AVCharacter::Dash_TimeElapsed, DashAnimDelay);
-}
-
-void AVCharacter::Dash_TimeElapsed()
-{
-	SpawnProjectile(DashProjectileClass);
+	ActionCopm->StartActionByName(this, "Dash");
 }
 
 void AVCharacter::BlackholeAttack()
 {
-	PlayAnimMontage(BlackholeAttackProjectileAnim);
-
-	GetWorldTimerManager().SetTimer(TimerHandle_BlackholeAttack, this, &AVCharacter::BlackholeAttack_TimeElapsed, BlackholeAttackAnimDelay);
+	ActionCopm->StartActionByName(this, "Blackhole");
 }
 
-void AVCharacter::BlackholeAttack_TimeElapsed()
-{
-	SpawnProjectile(BlackholeAttackProjectileClass);
-}
 
 void AVCharacter::OnHealthChanged(AActor* InstigatorActor, UVAttributeComponent* OwningComp, float NewHealth, float Delta)
 {
@@ -170,50 +158,6 @@ void AVCharacter::PrimaryInteract()
 	if (InteractionComp) 
 	{
 		InteractionComp->PrimaryInteract();
-	}
-}
-
-void AVCharacter::SpawnProjectile(TSubclassOf<AActor> ClassToSpawn)
-{
-	if (ensure(ClassToSpawn))
-	{
-		// For set location
-		// FVector Location = GetMesh()->GetSocketLocation("SocketName");
-		FVector SpawnLocation = GetActorLocation();
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		SpawnParams.Instigator = this;
-
-		FCollisionShape Shape;
-		Shape.SetSphere(20.0f);
-
-		// Ignor Player
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(this);
-
-		FCollisionObjectQueryParams ObjParams;
-		ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-		ObjParams.AddObjectTypesToQuery(ECC_WorldStatic);
-		ObjParams.AddObjectTypesToQuery(ECC_Pawn);
-
-		FVector TraceStart = CameraComp->GetComponentLocation();
-
-		// Endpoint far into the look-at distance
-		FVector TraceEnd = CameraComp->GetComponentLocation() + (GetControlRotation().Vector() * 5000);
-
-		FHitResult Hit;
-		// Return true if we got to a blocking hit
-		if (GetWorld()->SweepSingleByObjectType(Hit, TraceStart, TraceEnd, FQuat::Identity, ObjParams, Shape, Params))
-		{
-			// Overwrite trace end with impact point in world
-			TraceEnd = Hit.ImpactPoint;
-		}
-
-		FRotator ProjRotation = FRotationMatrix::MakeFromX(TraceEnd - SpawnLocation).Rotator();
-
-		FTransform SpawnTM = FTransform(ProjRotation, SpawnLocation);
-		GetWorld()->SpawnActor<AActor>(ClassToSpawn, SpawnTM, SpawnParams);
 	}
 }
 

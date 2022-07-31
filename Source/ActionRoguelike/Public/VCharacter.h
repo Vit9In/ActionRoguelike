@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UVInteractionComponent;
 class UAnimMontage;
 class UVAttributeComponent;
+class UVActionComponent;
 
 UCLASS()
 class ACTIONROGUELIKE_API AVCharacter : public ACharacter
@@ -23,41 +24,8 @@ public:
 
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	UAnimMontage* AttackAnim;
-
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	TSubclassOf<AActor> AttackProjectileClass;
-
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	FTimerHandle TimerHandle_PrimaryAttack;
-
-	UPROPERTY(EditAnywhere, Category = "Attack")
-	float AttackAnimDelay;
-
-	UPROPERTY(EditAnywhere, Category = "Dash")
-	UAnimMontage* DashProjectileAnim;
-
-	UPROPERTY(EditAnywhere, Category = "Dash")
-	float DashAnimDelay;
-
-	UPROPERTY(EditAnywhere, Category = "Dash")
-	TSubclassOf<AActor> DashProjectileClass;
-
-	UPROPERTY(EditAnywhere, Category = "Dash")
-	FTimerHandle TimerHandle_Dash;
-
-	UPROPERTY(EditAnywhere, Category = "BlackholeAttack")
-	UAnimMontage* BlackholeAttackProjectileAnim;
-
-	UPROPERTY(EditAnywhere, Category = "BlackholeAttack")
-	float BlackholeAttackAnimDelay;
-
-	UPROPERTY(EditAnywhere, Category = "BlackholeAttack")
-	TSubclassOf<AActor> BlackholeAttackProjectileClass;
-
-	UPROPERTY(EditAnywhere, Category = "BlackholeAttack")
-	FTimerHandle TimerHandle_BlackholeAttack;
+	UPROPERTY(VisibleAnywhere, Category = "Effects")
+	FName TimeToHitParamName;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USpringArmComponent* SpringArmComp;
@@ -71,42 +39,43 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UVAttributeComponent* AttributeCopm;
 
-	// Called when the game starts or when spawned
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UVActionComponent* ActionCopm;
+
 	virtual void BeginPlay() override;
 
-	// Called when the VCharacter moves forward
 	void MoveForward(float Value);
 
-	// Called when the VCharacter moves right
 	void MoveRight(float Value);	
+
+	void SprintStart();
+
+	void SprintStop();
 
 	void PrimaryInteract();
 
-	void SpawnProjectile(TSubclassOf<AActor> ClassToSpawn);
-
-	// Called when attacks
 	void PrimaryAttack();
-	void PrimaryAttack_TimeElapsed();
 
-	// Called when dashes
 	void Dash();
-	void Dash_TimeElapsed();
 
-	// Called when attacks with blackhole
 	void BlackholeAttack();
-	void BlackholeAttack_TimeElapsed();
+
 
 	UFUNCTION()
 	void OnHealthChanged(AActor* InstigatorActor, UVAttributeComponent* OwningComp, float NewHealth, float Delta);
 
 	virtual void PostInitializeComponents() override;
 
+	virtual FVector GetPawnViewLocation() const override;
+
 
 public:	
-	// Called every frame
+
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UFUNCTION(Exec)
+	void HealSelf(float Amount = 100);
 
 };
