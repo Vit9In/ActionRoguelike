@@ -10,6 +10,7 @@
 #include "VWorldUserWidget.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "VActionComponent.h"
 
 // Sets default values
 AVAICharacter::AVAICharacter()
@@ -18,6 +19,8 @@ AVAICharacter::AVAICharacter()
 
 	AttributeCopm = CreateDefaultSubobject<UVAttributeComponent>("AttributeComp");
 
+	ActionComp = CreateDefaultSubobject<UVActionComponent>("ActionComp");
+
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	// For Bones
@@ -25,6 +28,8 @@ AVAICharacter::AVAICharacter()
 	//GetMesh()->SetGenerateOverlapEvents(true);
 
 	TimeToHitParamName = "TimeToHit";
+
+	TargetActorKey = "TargetActor";
 
 }
 
@@ -42,13 +47,37 @@ void AVAICharacter::SetTargetActor(AActor* NewTarget)
 	AAIController* AIC = Cast<AAIController>(GetController());
 	if (AIC)
 	{
-		AIC->GetBlackboardComponent()->SetValueAsObject("TargetActor", NewTarget);
+		AIC->GetBlackboardComponent()->SetValueAsObject(TargetActorKey, NewTarget);
 	}
+}
+
+AActor* AVAICharacter::GetTargetActor() const
+{
+
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (AIC)
+	{
+		return Cast<AActor>(AIC->GetBlackboardComponent()->GetValueAsObject(TargetActorKey));
+	}
+
+	return nullptr;
 }
 
 void AVAICharacter::OnPawnSeen(APawn* Pawn)
 {
-	SetTargetActor(Pawn);
+	if (GetTargetActor() != Pawn)
+	{
+		SetTargetActor(Pawn);
+
+		UVWorldUserWidget* NewWidget = CreateWidget<UVWorldUserWidget>(GetWorld(), SpottedWidgetClass);
+		if (NewWidget)
+		{
+			NewWidget->AttachedActor = this;
+			NewWidget->AddToViewport(10);
+		}
+	}
+
+	
 }
 
 void AVAICharacter::OnHealthChanged(AActor* InstigatorActor, UVAttributeComponent* OwningComp, float NewHealth, float Delta)

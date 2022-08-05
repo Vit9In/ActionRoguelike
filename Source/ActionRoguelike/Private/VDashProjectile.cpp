@@ -43,6 +43,8 @@ void AVDashProjectile::TeleportInstigator()
 	if (ensure(ActorToTeleport))
 	{
 		ActorToTeleport->TeleportTo(GetActorLocation(), ActorToTeleport->GetActorRotation(), false, false);
+
+		Destroy();
 	}
 }
 

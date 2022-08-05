@@ -10,6 +10,9 @@
 class UEnvQuery;
 class UEnvQueryInstanceBlueprintWrapper;
 class UCurveFloat;
+class AVPlayerState;
+class UVSaveGame;
+
 
 /**
  * 
@@ -20,6 +23,26 @@ class ACTIONROGUELIKE_API AVGameModeBase : public AGameModeBase
 	GENERATED_BODY()
 
 protected:
+
+	FString SlotName;
+
+	UPROPERTY()
+	UVSaveGame* CurrentSaveGame;
+
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	int32 CreditsPerKill;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Powerups")
+	UEnvQuery* PowerupSpawnQuery;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Powerups")
+	TArray<TSubclassOf<AActor>> PowerupClasses;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Powerups")
+	int32 DesiredPowerupCount;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Powerups")
+	float RequiredPowerupDistance;
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	TSubclassOf<AActor>	MinionClass;
@@ -44,8 +67,10 @@ protected:
 	UFUNCTION()
 	void RespawnPlayerElapsed(AController* Controller);
 
-public:
+	UFUNCTION()
+	void OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus);
 
+public:
 
 	virtual void OnActorKilled(AActor* VictimActor, AActor* Killer);
 
@@ -55,5 +80,10 @@ public:
 
 	UFUNCTION(Exec)
 	void KillALl();
+
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	void WriteSaveGame();
+
+	void LoadSaveGame();
 
 };

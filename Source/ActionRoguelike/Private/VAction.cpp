@@ -3,28 +3,35 @@
 
 #include "VAction.h"
 #include "VActionComponent.h"
+#include "../ActionRoguelike.h"
+#include "Net/UnrealNetwork.h"
+
 
 
 void UVAction::StartAction_Implementation(AActor* Instigator)
 {
-	UE_LOG(LogTemp, Log, TEXT("Running: %s"), *GetNameSafe(this));
+	//UE_LOG(LogTemp, Log, TEXT("Running: %s"), *GetNameSafe(this));
+	LogOnScreen(this, FString::Printf(TEXT("Started: %s"), *ActionName.ToString()), FColor::Green);
 
 	UVActionComponent* Comp = GetOwningCopmonent();
 	Comp->ActiveGameplayTags.AppendTags(GrantsTags);
 
-	bIsRunning = true;
+	RepData.bIsRunning = true;
+	RepData.Instigator = Instigator;
 }
 
 void UVAction::StopAction_Implementation(AActor* Instigator)
 {
-	UE_LOG(LogTemp, Log, TEXT("Stopped: %s"), *GetNameSafe(this));
+	//UE_LOG(LogTemp, Log, TEXT("Stopped: %s"), *GetNameSafe(this));
+	LogOnScreen(this, FString::Printf(TEXT("Stopped: %s"), *ActionName.ToString()), FColor::White);
 
-	ensureAlways(bIsRunning);
+	//ensureAlways(bIsRunning);
 
 	UVActionComponent* Comp = GetOwningCopmonent();
 	Comp->ActiveGameplayTags.RemoveTags(GrantsTags);
 
-	bIsRunning = false;
+	RepData.bIsRunning = false;
+	RepData.Instigator = Instigator;
 }
 
 bool UVAction::CanStart_Implementation(AActor* Instigator)
@@ -42,18 +49,13 @@ bool UVAction::CanStart_Implementation(AActor* Instigator)
 	return true;
 }
 
-bool UVAction::IsRunning() const
-{
-	return bIsRunning;
-}
-
 UWorld* UVAction::GetWorld() const
 {
 	// Outer is set when creating action via NewObject<T>
-	UActorComponent* Comp = Cast<UActorComponent>(GetOuter());
-	if (Comp)
+	AActor* Actor = Cast<AActor>(GetOuter());
+	if (Actor)
 	{
-		return Comp->GetWorld();
+		return Actor->GetWorld();
 	}
 
 	return nullptr;
@@ -61,5 +63,38 @@ UWorld* UVAction::GetWorld() const
 
 UVActionComponent* UVAction::GetOwningCopmonent() const
 {
-	return Cast<UVActionComponent>(GetOuter());
+
+	return ActionComp;
+	//return Cast<UVActionComponent>(GetOuter());
+}
+
+void UVAction::OnRep_RepData()
+{
+	if (RepData.bIsRunning)
+	{
+		StartAction(RepData.Instigator);
+	}
+	else
+	{
+		StopAction(RepData.Instigator);
+	}
+}
+
+void UVAction::Initialize(UVActionComponent* NewActionComp)
+{
+	ActionComp = NewActionComp;
+}
+
+bool UVAction::IsRunning() const
+{
+	return RepData.bIsRunning;
+}
+
+void UVAction::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UVAction, RepData);
+	DOREPLIFETIME(UVAction, ActionComp);
+
 }

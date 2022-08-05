@@ -9,6 +9,8 @@ UVAction_ProjectileAttack::UVAction_ProjectileAttack()
 {
 	SpawnLocationName = "HandLocation";
 	AttackAnimDelay = 0.2f;
+
+	
 }
 
 void UVAction_ProjectileAttack::StartAction_Implementation(AActor* Instigator)
@@ -24,11 +26,15 @@ void UVAction_ProjectileAttack::StartAction_Implementation(AActor* Instigator)
 		// For charge effect
 		//UGameplayStatics::SpawnEmitterAttached(CastingEffect, Character->GetMesh(), SpawnLocationName /*SpawnLocationName*/, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget);
 	
-		FTimerHandle TimerHandle_AttackDelay;
-		FTimerDelegate Delegate;
-		Delegate.BindUFunction(this, "AttackDelay_Elapsed", Character);
+			
+		if (Character->HasAuthority())
+		{
+			FTimerHandle TimerHandle_AttackDelay;
+			FTimerDelegate Delegate;
+			Delegate.BindUFunction(this, "AttackDelay_Elapsed", Character);
 
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AttackDelay, Delegate, AttackAnimDelay, false);
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle_AttackDelay, Delegate, AttackAnimDelay, false);
+		}
 	}
 }
 

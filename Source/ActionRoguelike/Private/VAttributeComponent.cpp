@@ -3,8 +3,27 @@
 
 #include "VAttributeComponent.h"
 #include "VGameModeBase.h"
+#include "Net/UnrealNetwork.h"
 
 static TAutoConsoleVariable<float> CVarDamageMultiplier(TEXT("su.DamageMultiplier"), 1.0f, TEXT("Global Damage Modifier for Attribute Component."), ECVF_Cheat);
+
+
+// Sets default values for this component's properties
+UVAttributeComponent::UVAttributeComponent()
+{
+	HealthMax = 100;
+	Health = HealthMax;
+
+	RageMax = 0;
+	RageMax = 100;
+
+	SetIsReplicatedByDefault(true);
+}
+
+bool UVAttributeComponent::Kill(AActor* InstigatorActor)
+{
+	return ApplyHealthChange(InstigatorActor, -GetHealthMax());
+}
 
 bool UVAttributeComponent::IsActorAlive(AActor* Actor)
 {
@@ -15,18 +34,6 @@ bool UVAttributeComponent::IsActorAlive(AActor* Actor)
 	}
 
 	return false;
-}
-
-// Sets default values for this component's properties
-UVAttributeComponent::UVAttributeComponent()
-{
-	HealthMax = 100;
-	Health = HealthMax;
-}
-
-bool UVAttributeComponent::Kill(AActor* InstigatorActor)
-{
-	return ApplyHealthChange(InstigatorActor, -GetHealthMax());
 }
 
 bool UVAttributeComponent::IsAlive() const
@@ -41,7 +48,7 @@ bool UVAttributeComponent::IsFullHealth() const
 
 float UVAttributeComponent::GetHealthMax() const
 {
-	return HealthMax;
+	return HealthMax; 
 }
 
 bool UVAttributeComponent::ApplyHealthChange(AActor* InstigatorActor ,float Delta)
@@ -51,6 +58,11 @@ bool UVAttributeComponent::ApplyHealthChange(AActor* InstigatorActor ,float Delt
 		return false;
 	}
 
+	/*if (!GetOwner()->HasAuthority())
+	{
+		return false;
+	}*/
+
 	if (Delta < 0.0f)
 	{
 		float DamageMultiplier = CVarDamageMultiplier.GetValueOnGameThread();
@@ -59,11 +71,20 @@ bool UVAttributeComponent::ApplyHealthChange(AActor* InstigatorActor ,float Delt
 	}
 
 	float OldHealth = Health;
+	float NewHealth = FMath::Clamp(Health + Delta, 0.0f, HealthMax);
+	float ActualDelta = NewHealth - OldHealth;
 
-	Health = FMath::Clamp(Health + Delta, 0.0f, HealthMax);
+	// Is Server?
+	if (GetOwner()->HasAuthority())
+	{
+		Health = NewHealth;
 
-	float ActualDelta = Health - OldHealth;
-	OnHealthChanged.Broadcast(InstigatorActor, this, Health, ActualDelta);
+		if (ActualDelta != 0.0f)
+		{
+			MulticastHealthChanged(InstigatorActor, Health, ActualDelta);
+
+		}
+	}
 
 	//Died
 	if (ActualDelta < 0.0f && Health == 0.0f)
@@ -78,6 +99,26 @@ bool UVAttributeComponent::ApplyHealthChange(AActor* InstigatorActor ,float Delt
 	return ActualDelta != 0;
 }
 
+float UVAttributeComponent::GetRage() const
+{
+	return Rage;
+}
+
+bool UVAttributeComponent::ApplyRage(AActor* InstigatorActor, float Delta)
+{
+	float OldRage = Rage;
+
+	Rage = FMath::Clamp(Rage + Delta, 0.0f, RageMax);
+
+	float ActualDelta = Rage - OldRage;
+	if (ActualDelta != 0.0f)
+	{
+		OnRageChanged.Broadcast(InstigatorActor, this, Rage, ActualDelta);
+	}
+
+	return ActualDelta != 0;
+}
+
 UVAttributeComponent* UVAttributeComponent::GetAttribues(AActor* FromActor)
 {
 	if (FromActor)
@@ -86,5 +127,21 @@ UVAttributeComponent* UVAttributeComponent::GetAttribues(AActor* FromActor)
 	}
 
 	return nullptr;
+}
+
+void UVAttributeComponent::MulticastHealthChanged_Implementation(AActor* InstigatorActor, float NewHealth, float Delta)
+{
+	OnHealthChanged.Broadcast(InstigatorActor, this, NewHealth, Delta);
+}
+
+
+void UVAttributeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UVAttributeComponent, Health);
+	DOREPLIFETIME(UVAttributeComponent, HealthMax);
+
+	//DOREPLIFETIME_CONDITION(UVAttributeComponent, HealthMax, COND_InitialOnly);
 }
 

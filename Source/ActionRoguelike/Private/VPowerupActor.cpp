@@ -12,6 +12,8 @@ AVPowerupActor::AVPowerupActor()
     RootComponent = SphereComp;
 
     RespawnTime = 10.0f;
+
+    SetReplicates(true);
 }
 
 

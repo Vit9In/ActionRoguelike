@@ -2,6 +2,8 @@
 
 
 #include "VItemChest.h"
+#include "Net/UnrealNetwork.h"
+
 
 // Sets default values
 AVItemChest::AVItemChest()
@@ -16,12 +18,27 @@ AVItemChest::AVItemChest()
 	LidMesh->SetupAttachment(BaseMesh);
 
 	TargetUp = 100;
+
+	bReplicates = true;
+	//SetReplicates(true);
 }
 
 void AVItemChest::Interact_Implementation(APawn* InstigatorPawn)
-{
-	LidMesh->SetRelativeLocation(FVector(0, TargetUp, 0));
-
+{	
+	bLidOpened = !bLidOpened;	
+	OnRep_LidOpened();
 }
 
+void AVItemChest::OnRep_LidOpened()
+{
+	float CurrPitch = bLidOpened ? TargetUp : 0.0f;
+	LidMesh->SetRelativeRotation(FRotator(CurrPitch, 0, 0));
+}
+
+void AVItemChest::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AVItemChest, bLidOpened);
+}
 

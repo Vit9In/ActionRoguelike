@@ -6,7 +6,11 @@
 #include "Components/ActorComponent.h"
 #include "VAttributeComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChanged, AActor*, InstigatorActor, UVAttributeComponent*, OwningComp, float, NewHealth, float, Delta);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnHealthChanged, AActor*, InstigatorActor, UVAttributeComponent*, OwningComp, float, NewHealth, float, Delta);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnRageChanged, AActor*, InstigatorActor, UVAttributeComponent*, OwningComp, float, NewHealth, float, Delta);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnAttributeChanged, AActor*, InstigatorActor, UVAttributeComponent*, OwningComp, float, NewHealth, float, Delta);
+
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -38,11 +42,23 @@ protected:
 	// --
 	// Category = "" - display only for detail panels and blueprint context menu.
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Replicated, Category = "Attributes")
 	float Health;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Replicated, Category = "Attributes")
 	float HealthMax;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Replicated, Category = "Attributes")
+	float Rage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Replicated, Category = "Attributes")
+	float RageMax;
+
+	//UPROPERTY(ReplicatedUsing="")
+	//bool bIsAlive;
+
+	UFUNCTION(NetMulticast, Reliable) // @FIXME: mark as unreliable once we moved the 'state' our of vcharacter
+	void MulticastHealthChanged(AActor* InstigatorActor, float NewHealth, float Delta);
 
 public:	
 
@@ -58,8 +74,24 @@ public:
 	UFUNCTION(BlueprintCallable)
 	float GetHealthMax() const;
 
-	UPROPERTY(BlueprintAssignable, Category = "Attributes")
-	FOnHealthChanged OnHealthChanged;
+	//UPROPERTY(BlueprintAssignable, Category = "Attributes")
+	//FOnHealthChanged OnHealthChanged;
 
+	//UPROPERTY(BlueprintAssignable, Category = "Attributes")
+	//FOnRageChanged OnRageChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Attributes")
+	FOnAttributeChanged OnHealthChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Attributes")
+	FOnAttributeChanged OnRageChanged;
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
 	bool ApplyHealthChange(AActor* InstigatorActor, float Delta);
+
+	UFUNCTION(BlueprintCallable)
+	float GetRage() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	bool ApplyRage(AActor* InstigatorActor, float Delta);
 };

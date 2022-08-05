@@ -4,39 +4,33 @@
 #include "VInteractionComponent.h"
 #include "VGameplayInterface.h"
 #include <DrawDebugHelpers.h>
+#include "VWorldUserWidget.h"
 
-static TAutoConsoleVariable<bool> CVarDebugDrawInteraction(TEXT("su.InteractionDebugDraw"), true, TEXT("Enable Debug Lines for Interact Component."), ECVF_Cheat);
+static TAutoConsoleVariable<bool> CVarDebugDrawInteraction(TEXT("su.InteractionDebugDraw"), false, TEXT("Enable Debug Lines for Interact Component."), ECVF_Cheat);
 
-// Sets default values for this component's properties
 UVInteractionComponent::UVInteractionComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 }
 
-
-// Called when the game starts
 void UVInteractionComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
-	
 }
 
-
-// Called every frame
 void UVInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+
+	APawn* MyPawn = Cast<APawn>(GetOwner());
+	if (MyPawn->IsLocallyControlled())
+	{
+		FindBestInteractable();
+	}
 }
 
-void UVInteractionComponent::PrimaryInteract()
+void UVInteractionComponent::FindBestInteractable()
 {
 	bool bDebugDraw = CVarDebugDrawInteraction.GetValueOnGameThread();
 
@@ -47,9 +41,9 @@ void UVInteractionComponent::PrimaryInteract()
 
 	FVector EyeLocation;
 	FRotator EyeRotator;
-	MyOwner->GetActorEyesViewPoint(EyeLocation,EyeRotator);
+	MyOwner->GetActorEyesViewPoint(EyeLocation, EyeRotator);
 
-	FVector End = EyeLocation + (EyeRotator.Vector() * 1000);
+	FVector End = EyeLocation + (EyeRotator.Vector() * 500);
 
 	TArray<FHitResult> Hits;
 
@@ -62,6 +56,9 @@ void UVInteractionComponent::PrimaryInteract()
 
 	FColor LineColor = bBlockingHit ? FColor::Green : FColor::Red;
 
+	// clear ref before finde
+	FocusedActor = nullptr;
+
 	for (FHitResult Hit : Hits)
 	{
 		if (bDebugDraw)
@@ -73,17 +70,58 @@ void UVInteractionComponent::PrimaryInteract()
 		if (HitActor)
 		{
 			if (HitActor->Implements<UVGameplayInterface>())
-			{
-				APawn* MyPawn = Cast<APawn>(MyOwner);
-				IVGameplayInterface::Execute_Interact(HitActor, MyPawn);
+			{		
+				FocusedActor = HitActor;
 				break;
 			}
-		}		
+		}
 	}
-	
+
+	if (FocusedActor)
+	{
+		if (DefaultsWidgetInstance == nullptr && ensure(DefaultWidgetClass))
+		{
+			DefaultsWidgetInstance = CreateWidget<UVWorldUserWidget>(GetWorld(), DefaultWidgetClass);
+		}
+
+		if (DefaultsWidgetInstance)
+		{
+			DefaultsWidgetInstance->AttachedActor = FocusedActor;
+
+			if (!DefaultsWidgetInstance->IsInViewport())
+			{
+				DefaultsWidgetInstance->AddToViewport();
+			}			
+		}
+	}
+	else
+	{
+		if (DefaultsWidgetInstance)
+		{
+			DefaultsWidgetInstance->RemoveFromParent();
+		}
+	}
+
 	if (bDebugDraw)
 	{
 		DrawDebugLine(GetWorld(), EyeLocation, End, LineColor, false, 2.0f, 0, 2.0f);
 	}
+}
+
+void UVInteractionComponent::PrimaryInteract()
+{
+	ServerInteract(FocusedActor);
+}
+
+void UVInteractionComponent::ServerInteract_Implementation(AActor* InFocus)
+{
+	if (InFocus == nullptr)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, "No Focus Actor to interact.");
+		return;
+	}
+
+	APawn* MyPawn = Cast<APawn>(GetOwner());
+	IVGameplayInterface::Execute_Interact(InFocus, MyPawn);
 }
 

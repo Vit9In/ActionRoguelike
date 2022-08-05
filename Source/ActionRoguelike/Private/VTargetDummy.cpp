@@ -11,7 +11,7 @@ AVTargetDummy::AVTargetDummy()
 {
     MeshComp = CreateDefaultSubobject<UStaticMeshComponent>("MeshComp");
     RootComponent = MeshComp;
-
+    
     AttributeComp = CreateDefaultSubobject<UVAttributeComponent>("AttributeComp");
     AttributeComp->OnHealthChanged.AddDynamic(this, &AVTargetDummy::OnHealthChanged);
 

@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "VInteractionComponent.generated.h"
 
+class UVWorldUserWidget;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ACTIONROGUELIKE_API UVInteractionComponent : public UActorComponent
@@ -17,8 +18,22 @@ public:
 	UVInteractionComponent();
 
 protected:
-	// Called when the game starts
+
+	UFUNCTION(Server, Reliable)
+	void ServerInteract(AActor* InFocus);
+
+	void FindBestInteractable();
+
 	virtual void BeginPlay() override;
+
+	UPROPERTY()
+	AActor* FocusedActor;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UVWorldUserWidget> DefaultWidgetClass;
+
+	UPROPERTY()
+	UVWorldUserWidget* DefaultsWidgetInstance;
 
 public:	
 	// Called every frame

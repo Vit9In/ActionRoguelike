@@ -146,10 +146,21 @@ void AVCharacter::BlackholeAttack()
 
 void AVCharacter::OnHealthChanged(AActor* InstigatorActor, UVAttributeComponent* OwningComp, float NewHealth, float Delta)
 {
+	if (Delta < 0.0f)
+	{
+		GetMesh()->SetScalarParameterValueOnMaterials(TimeToHitParamName, GetWorld()->TimeSeconds);
+
+		// Rage added equal to damage received (Abs to turn into positive rage number)
+		float RageDelta = FMath::Abs(Delta);
+		AttributeCopm->ApplyRage(InstigatorActor, RageDelta);
+	}
+
 	if (NewHealth <= 0.0f && Delta < 0.0f)
 	{
 		APlayerController* PC = Cast<APlayerController>(GetController());
 		DisableInput(PC);
+
+		SetLifeSpan(5.0f);
 	}
 }
 

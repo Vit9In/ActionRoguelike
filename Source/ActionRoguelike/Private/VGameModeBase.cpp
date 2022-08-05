@@ -9,13 +9,22 @@
 #include "VAttributeComponent.h"
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
-#include <VCharacter.h>
+#include "VCharacter.h"
+#include "VPlayerState.h"
+#include "Kismet/GameplayStatics.h"
+#include "VSaveGame.h"
 
 static TAutoConsoleVariable<bool> CVarSpawnBots(TEXT("su.SpawnBots"), true, TEXT("Enable spawning of bots via timer"), ECVF_Cheat);
 
 AVGameModeBase::AVGameModeBase()
 {
 	SpawnTimerInterval = 2.0f;
+	CreditsPerKill = 100;
+
+	DesiredPowerupCount = 10;
+	RequiredPowerupDistance = 2000;
+
+	PlayerStateClass = AVPlayerState::StaticClass();
 }
 
 void AVGameModeBase::StartPlay()
@@ -25,6 +34,64 @@ void AVGameModeBase::StartPlay()
 	// Continuous timer to spawn in more bots.
 	// Actual amount of bots and whether its allowed to spawn determined by spawn logic later in the chain...
 	GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &AVGameModeBase::SpawnBotTimerElapsed, SpawnTimerInterval, true);
+
+	if (ensure(PowerupClasses.Num() > 0))
+	{
+		UEnvQueryInstanceBlueprintWrapper* QueryInstance = UEnvQueryManager::RunEQSQuery(this, PowerupSpawnQuery, this, EEnvQueryRunMode::AllMatching, nullptr);
+		if (ensure(QueryInstance))
+		{
+			QueryInstance->GetOnQueryFinishedEvent().AddDynamic(this, &AVGameModeBase::OnPowerupSpawnQueryCompleted);
+		}
+	}
+}
+
+void AVGameModeBase::OnPowerupSpawnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryInstance, EEnvQueryStatus::Type QueryStatus)
+{
+	if (QueryStatus != EEnvQueryStatus::Success)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Spawn Powerup EQS Query Failed!"));
+		return;
+	}
+
+	TArray<FVector> Locations = QueryInstance->GetResultsAsLocations();
+
+	TArray<FVector> UsedLocations;
+
+	int32 SpawnCounter = 0;
+
+	while (SpawnCounter < DesiredPowerupCount && Locations.Num() > 0)
+	{
+		int32 RandomLocationIndex = FMath::RandRange(0, Locations.Num() - 1);
+
+		FVector PickedLocation = Locations[RandomLocationIndex];
+
+		Locations.RemoveAt(RandomLocationIndex);
+
+		bool bValidLocation = true;
+		for (FVector OtherLocation : UsedLocations)
+		{
+			float DistanceTo = (PickedLocation - OtherLocation).Size();
+
+			if (DistanceTo < RequiredPowerupDistance)
+			{
+				bValidLocation = false;
+				break;
+			}
+		}
+
+		if (!bValidLocation)
+		{
+			continue;
+		}
+
+		int32 RandomClassIndex = FMath::RandRange(0, PowerupClasses.Num() - 1);
+		TSubclassOf<AActor> RandomPowerupClass = PowerupClasses[RandomClassIndex];
+
+		GetWorld()->SpawnActor<AActor>(RandomPowerupClass, PickedLocation, FRotator::ZeroRotator);
+
+		UsedLocations.Add(PickedLocation);
+		SpawnCounter++;
+	}
 }
 
 void AVGameModeBase::KillALl()
@@ -125,6 +192,38 @@ void AVGameModeBase::OnActorKilled(AActor* VictimActor, AActor* Killer)
 
 		float RespawnDelay = 2.0f;
 		GetWorldTimerManager().SetTimer(TimerHandle_RespawnDelay, Delegate, RespawnDelay, false);
+	}
+
+	APawn* KillerPawn = Cast<APawn>(Killer);
+	if (KillerPawn) 
+	{
+		AVPlayerState* PS = KillerPawn->GetPlayerState<AVPlayerState>();
+		if (PS)
+		{
+			PS->AddCredits(CreditsPerKill);
+		}
+	}
+}
+
+void AVGameModeBase::WriteSaveGame()
+{
+
+}
+
+void AVGameModeBase::LoadSaveGame()
+{
+	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	{		
+		UVSaveGame* CurrentSaveGame = Cast<UVSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
+		if (CurrentSaveGame == nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed to load SaveGame Data."));
+			return;
+		}
+	}
+	else
+	{
+		CurrentSaveGame = Cast<UVSaveGame>(UGameplayStatics::CreateSaveGameObject(UVSaveGame::StaticClass()));
 	}
 }
 
